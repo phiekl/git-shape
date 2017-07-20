@@ -24,3 +24,9 @@ items. The branch is now ready to be merged into another repo or a new one.
 
 To do the opposite, keeping everything but the mentioned files/dirs, use `-b`
 instead of `-w`.
+
+Although file1's path might be ./dir/subdir/file1 (relative to the repo root),
+the dir path will be stripped and file1 (and all other selected files/dirs) will
+be placed directly in the repo root once the process is completed. The script
+supports argument -d to specify a directory path relative to the repo root where
+all files/dirs will be relocated into instead of the repo root.

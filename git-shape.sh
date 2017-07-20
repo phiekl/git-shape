@@ -7,13 +7,17 @@ syntax()
 }
 [ -n "$2" ] || syntax
 
-unset mode
+unset final_dir mode
 
 while [ -n "${1+set}" ]; do
   case "$1" in
     '-b')
       mode='blacklist'
       shift
+      ;;
+    '-d')
+      final_dir="$2"
+      shift 2
       ;;
     '-w')
       mode='whitelist'
@@ -69,9 +73,25 @@ fi
 
 chmod +x "$tmpscript"
 
-ls -al
 set -x
 git checkout -b "$tmpname"
 git filter-branch -f --prune-empty --tree-filter "$tmpscript" HEAD
 [ "$mode" == 'whitelist' ] && \
   git filter-branch -f --prune-empty --subdirectory-filter "$tmpname"
+set +x
+
+if [ -n "$final_dir" ]; then
+  unset basepaths
+  declare -A basepaths
+  for path in "${paths[@]}"; do
+    basepaths["${path##*/}"]='set'
+  done
+  cat << EOF > "$tmpscript"
+#!/bin/bash
+mkdir -p "$final_dir"
+mv$(printf ' "%s"' "${!basepaths[@]}") "$final_dir" 2>&-
+exit 0
+EOF
+  set -x
+  git filter-branch -f --prune-empty --tree-filter "$tmpscript" HEAD
+fi
