@@ -2,14 +2,37 @@
 
 syntax()
 {
-  printf 'syntax: git shape [-b|-w] <file/dir_path_in_repo>..\n' 1>&2
+  printf 'syntax: git shape <-b|-w> [-d <dir>] <file/dir_path_in_repo>..\n' 1>&2
   exit 1
 }
 [ -n "$2" ] || syntax
-[[ $1 =~ ^-[bw]$ ]] || syntax
 
-mode="$1"
-shift
+unset mode
+
+while [ -n "${1+set}" ]; do
+  case "$1" in
+    '-b')
+      mode='blacklist'
+      shift
+      ;;
+    '-w')
+      mode='whitelist'
+      shift
+      ;;
+    '--')
+      shift
+      break
+      ;;
+    -*)
+      syntax
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+[ -n "$mode" ] || syntax
 
 set -e
 
@@ -29,7 +52,7 @@ done < <(
   done | sort -V | uniq
 )
 
-if [ "$mode" == '-b' ]; then
+if [ "$mode" == 'blacklist' ]; then
   cat << EOF > "$tmpscript"
 #!/bin/bash
 rm -rf $(printf ' "./%s"' "${paths[@]}") 2>&-
@@ -50,5 +73,5 @@ ls -al
 set -x
 git checkout -b "$tmpname"
 git filter-branch -f --prune-empty --tree-filter "$tmpscript" HEAD
-[ "$mode" == '-w' ] && \
+[ "$mode" == 'whitelist' ] && \
   git filter-branch -f --prune-empty --subdirectory-filter "$tmpname"
