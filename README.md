@@ -27,6 +27,11 @@ instead of `-w`.
 
 Although file1's path might be ./dir/subdir/file1 (relative to the repo root),
 the dir path will be stripped and file1 (and all other selected files/dirs) will
-be placed directly in the repo root once the process is completed. The script
-supports argument -d to specify a directory path relative to the repo root where
-all files/dirs will be relocated into instead of the repo root.
+be placed directly in the repo root once the process is completed.
+
+The script supports argument -d to specify a directory path relative to the repo
+root where all files/dirs will be relocated into instead of the repo root.
+
+The script also supports argument -f to specify a single destination file name
+for the kept files. This is whenever you want to split a single file and also
+rename it.

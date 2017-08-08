@@ -1,13 +1,21 @@
 #!/bin/bash
 
+die()
+{
+  printf '%s\n' "$1" 1>&2
+  exit 1
+}
+
 syntax()
 {
-  printf 'syntax: git shape <-b|-w> [-d <dir>] <file/dir_path_in_repo>..\n' 1>&2
+  cat 1>&2 << EOF
+syntax: git shape <-b|-w> [-d <dir>] [-f <file>] <file/dir_path_in_repo>..
+EOF
   exit 1
 }
 [ -n "$2" ] || syntax
 
-unset final_dir mode
+unset final_dir final_fn mode
 
 while [ -n "${1+set}" ]; do
   case "$1" in
@@ -17,6 +25,10 @@ while [ -n "${1+set}" ]; do
       ;;
     '-d')
       final_dir="$2"
+      shift 2
+      ;;
+    '-f')
+      final_fn="$2"
       shift 2
       ;;
     '-w')
@@ -37,6 +49,9 @@ while [ -n "${1+set}" ]; do
 done
 
 [ -n "$mode" ] || syntax
+
+[ -n "$final_fn" -a "$#" -gt '1' ] && \
+  die "Only a single file/dir path may be supplied with -f."
 
 set -e
 
@@ -80,16 +95,16 @@ git filter-branch -f --prune-empty --tree-filter "$tmpscript" HEAD
   git filter-branch -f --prune-empty --subdirectory-filter "$tmpname"
 set +x
 
-if [ -n "$final_dir" ]; then
-  unset basepaths
-  declare -A basepaths
-  for path in "${paths[@]}"; do
-    basepaths["${path##*/}"]='set'
-  done
+if [ -n "$final_dir" -o -n "$final_fn" ]; then
+  if [ -n "$final_fn" ]; then
+    final_dst="${final_dir:-.}/$final_fn"
+  else
+    final_dst="$final_dir"
+  fi
   cat << EOF > "$tmpscript"
 #!/bin/bash
-mkdir -p "$final_dir"
-mv$(printf ' "%s"' "${!basepaths[@]}") "$final_dir" 2>&-
+mkdir -p "${final_dir:-.}"
+find . -type f -exec mv '{}' "$final_dst" \; 2>&-
 exit 0
 EOF
   set -x
