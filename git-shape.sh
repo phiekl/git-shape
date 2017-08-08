@@ -110,3 +110,16 @@ EOF
   set -x
   git filter-branch -f --prune-empty --tree-filter "$tmpscript" HEAD
 fi
+
+
+cat << EOF
+
+echo To rebase the results into another repo:
+
+cd yourotherrepo
+git remote add -t $tmpname tmpimport $(readlink -m .)
+git fetch tmpimport
+git rebase tmpimport/$tmpname
+git pull --rebase
+git remote remove tmpimport
+EOF
